@@ -121,8 +121,7 @@ public class CTRLoader extends AbstractLibrarySupportLoader {
 				break;
 			case 3:
 				try {
-					base -= targetInt;
-					if (base < 0) base += 0x10000000;
+					base = Math.abs(base - targetInt);
 					program.getMemory().setInt(target, base);
 				} catch (MemoryAccessException e) {
 					e.printStackTrace();
@@ -140,11 +139,10 @@ public class CTRLoader extends AbstractLibrarySupportLoader {
 		}
 		
 		for (NamedExportEntry entry : namedExportTable) {
-			int realOffset = entry.getSegOffset() >> 4;
-			int base = segTable.get(entry.getSegOffset() & 0xf).getOffset();
+			int base = DecodeSegOffset(segTable, entry.getSegOffset());
 			String name = reader.readTerminatedString(entry.getNameOffset(), '\0');
 			try {
-				Address func = program.getAddressFactory().getDefaultAddressSpace().getAddress(base + realOffset);
+				Address func = program.getAddressFactory().getDefaultAddressSpace().getAddress(base);
 				program.getFunctionManager().createFunction(name, func, new AddressSet(func), SourceType.ANALYSIS);
 			} catch (InvalidInputException | AddressOutOfBoundsException | OverlappingFunctionException e) {
 				e.printStackTrace();
