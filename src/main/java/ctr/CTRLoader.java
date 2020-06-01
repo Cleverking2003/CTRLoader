@@ -193,6 +193,27 @@ public class CTRLoader extends AbstractLibrarySupportLoader {
 				};
 			}
 		}
+		
+		int importNamedOffset = reader.readInt(0x100);
+		int importNamedSize = reader.readInt(0x104);
+		
+		reader.setPointerIndex(importNamedOffset);
+		for (int i = 0; i < importNamedSize; i++) {
+			int nameAddr = reader.readNextInt();
+			int addr = reader.readNextInt();
+			String name = reader.readTerminatedString(nameAddr, '\0');
+			int target = DecodeSegOffset(segTable, reader.readInt(addr));
+			try {
+				if (reader.readInt(target - 4) == 0xE51FF004) {
+					Address targetAddr = program.getAddressFactory().getDefaultAddressSpace().getAddress(target - 4);
+					program.getFunctionManager().createFunction(name, targetAddr, new AddressSet(targetAddr), SourceType.IMPORTED);
+				}
+				Address targetAddr = program.getAddressFactory().getDefaultAddressSpace().getAddress(target);
+				program.getFunctionManager().createFunction(name, targetAddr, new AddressSet(targetAddr), SourceType.IMPORTED);
+			} catch (InvalidInputException | AddressOutOfBoundsException | OverlappingFunctionException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
